@@ -14,7 +14,7 @@ def main():
 
     uploaded_files = st.file_uploader(
         "Upload multiple files to categorize by extension:",
-        type=["jpg", "jpeg", "png", "pdf", "docx", "xlsx", "exe", "zip", "msi", "pcap", "webp", "unknown"],
+        type=["jpg", "jpeg", "png", "pdf", "docx", "xlsx", "exe", "ex_", "bin", "zip", "msi", "pcap", "webp", "unknown"],
         accept_multiple_files=True
     )
     st.write("Uploaded files:", uploaded_files)
@@ -101,7 +101,7 @@ def main():
                     categorized_files[category].append((fname, file_bytes))
                 except Exception:
                     categorized_files["other"].append((fname, file_bytes))
-            elif ext == "exe":
+            elif ext in ["exe", "ex_", "bin"]:
                 categorized_files["exe"].append((fname, file_bytes))
             elif ext == "zip":
                 categorized_files["zip"].append((fname, file_bytes))
