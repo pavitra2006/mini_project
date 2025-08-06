@@ -2,12 +2,15 @@
 # Optional: Streamlit UI for OCR Document Sorter
 
 import streamlit as st
+import os
+from dotenv import load_dotenv
 
 def main():
     st.title("OCR Document Sorter")
     st.write("Select a folder to categorize files by extension.")
 
-    import os
+    # Load environment variables from .env file
+    load_dotenv()
 
     uploaded_files = st.file_uploader(
         "Upload multiple files to categorize by extension:",
