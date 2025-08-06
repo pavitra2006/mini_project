@@ -44,10 +44,13 @@ def main():
         from PyPDF2 import PdfReader
 
 
-        # Initialize Google Vision and Language clients
+        # Initialize Google Vision and Language clients using credentials from Streamlit secrets
+        from google.oauth2 import service_account
         try:
-            vision_client = vision.ImageAnnotatorClient()
-            lang_client = language_v1.LanguageServiceClient()
+            credentials_dict = st.secrets["gcp_service_account"]
+            credentials = service_account.Credentials.from_service_account_info(dict(credentials_dict))
+            vision_client = vision.ImageAnnotatorClient(credentials=credentials)
+            lang_client = language_v1.LanguageServiceClient(credentials=credentials)
         except Exception as e:
             st.error(f"Google Cloud API client error: {e}")
             return
