@@ -65,7 +65,15 @@ def main():
             else:
                 return "other"
 
-        categorized_files = {"certificate": [], "id_card": [], "invoice": [], "other": [], "pdf_error": []}
+        categorized_files = {
+            "certificate": [],
+            "id_card": [],
+            "invoice": [],
+            "exe": [],
+            "zip": [],
+            "other": [],
+            "pdf_error": []
+        }
         report_files = []
         other_ext_map = {}
         for uploaded_file in uploaded_files:
@@ -92,6 +100,10 @@ def main():
                     categorized_files[category].append((fname, file_bytes))
                 except Exception:
                     categorized_files["other"].append((fname, file_bytes))
+            elif ext == "exe":
+                categorized_files["exe"].append((fname, file_bytes))
+            elif ext == "zip":
+                categorized_files["zip"].append((fname, file_bytes))
             else:
                 other_ext_map.setdefault(ext, []).append((fname, file_bytes))
 
