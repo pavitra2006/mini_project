@@ -6,6 +6,10 @@ import os
 from dotenv import load_dotenv
 
 def main():
+    # Print Streamlit version and environment for debugging
+    st.write(f"Streamlit version: {st.__version__}")
+    st.write(f"Running in: {os.environ.get('STREAMLIT_SERVER_HEADLESS', 'unknown')}")
+    # If file uploads still do not work, ensure you are running with 'streamlit run app.py' and not 'python app.py'.
     st.title("OCR Document Sorter")
     st.write("Select a folder to categorize files by extension.")
 
