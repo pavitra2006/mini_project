@@ -7,3 +7,4 @@ numpy
 PyPDF2
 google-cloud-vision
 google-cloud-language
+python-dotenv
