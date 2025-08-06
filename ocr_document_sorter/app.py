@@ -24,6 +24,7 @@ def main():
         accept_multiple_files=True
     )
     st.write("Uploaded files (raw):", uploaded_files)
+    st.info("If file uploads are not working: 1) Make sure you are running Streamlit in a browser, not in a terminal or notebook. 2) If using a remote dev container or Codespace, check that file uploads are supported in your environment. 3) Try a different browser or clear your cache. 4) Restart the Streamlit app after any config changes.")
     if uploaded_files:
         st.write(f"Number of files uploaded: {len(uploaded_files)}")
         for f in uploaded_files:
