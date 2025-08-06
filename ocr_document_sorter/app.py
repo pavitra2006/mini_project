@@ -19,7 +19,13 @@ def main():
         type=["jpg", "jpeg", "png", "pdf", "docx", "xlsx", "exe", "ex_", "bin", "zip", "msi", "pcap", "webp", "unknown"],
         accept_multiple_files=True
     )
-    st.write("Uploaded files:", uploaded_files)
+    st.write("Uploaded files (raw):", uploaded_files)
+    if uploaded_files:
+        st.write(f"Number of files uploaded: {len(uploaded_files)}")
+        for f in uploaded_files:
+            st.write(f"File: {f.name}, Size: {getattr(f, 'size', 'unknown')}, Type: {getattr(f, 'type', 'unknown')}")
+    else:
+        st.warning("No files detected by Streamlit. If you just uploaded, try refreshing the page or restarting the app.")
     st.info("Google Cloud Vision API will be used for OCR on images and PDFs. Set up your Google credentials as described in the README.")
     if st.button("Categorize and Download as ZIP"):
         if not uploaded_files:
