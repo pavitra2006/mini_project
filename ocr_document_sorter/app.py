@@ -17,6 +17,7 @@ def main():
         type=["jpg", "jpeg", "png", "pdf", "docx", "xlsx", "exe", "zip", "msi", "pcap", "webp", "unknown"],
         accept_multiple_files=True
     )
+    st.write("Uploaded files:", uploaded_files)
     st.info("Google Cloud Vision API will be used for OCR on images and PDFs. Set up your Google credentials as described in the README.")
     if st.button("Categorize and Download as ZIP"):
         if not uploaded_files:
