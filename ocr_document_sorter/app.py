@@ -12,6 +12,8 @@ def main():
     # Load environment variables from .env file
     load_dotenv()
 
+    # NOTE: The upload limit is set in .streamlit/config.toml (maxUploadSize = 200)
+    # If you see a 413 error, reduce file size or increase the limit in config.toml and restart Streamlit.
     uploaded_files = st.file_uploader(
         "Upload multiple files to categorize by extension:",
         type=["jpg", "jpeg", "png", "pdf", "docx", "xlsx", "exe", "ex_", "bin", "zip", "msi", "pcap", "webp", "unknown"],
