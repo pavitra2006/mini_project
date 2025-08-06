@@ -8,13 +8,13 @@ def main():
     st.write("Select a folder to categorize files by extension.")
 
     import os
-    import shutil
 
     uploaded_files = st.file_uploader(
         "Upload multiple files to categorize by extension:",
         type=["jpg", "jpeg", "png", "pdf", "docx", "xlsx", "exe", "zip", "msi", "pcap", "webp", "unknown"],
         accept_multiple_files=True
     )
+    st.info("Google Cloud Vision API will be used for OCR on images and PDFs. Set up your Google credentials as described in the README.")
     if st.button("Categorize and Download as ZIP"):
         if not uploaded_files:
             st.error("No files uploaded.")
@@ -22,41 +22,89 @@ def main():
 
         import io
         import zipfile
+        from google.cloud import vision
+        from google.cloud import language_v1
         from PyPDF2 import PdfReader
 
-        def classify_pdf(file_bytes):
-            try:
-                reader = PdfReader(io.BytesIO(file_bytes))
-                text = ""
-                for page in reader.pages:
-                    text += page.extract_text() or ""
-                text = text.lower()
-                if any(word in text for word in ["certificate", "completion", "certify"]):
-                    return "certificate"
-                elif any(word in text for word in ["id card", "identity", "passport", "aadhaar", "pan card"]):
-                    return "id_card"
-                elif any(word in text for word in ["invoice", "bill", "amount due", "total due"]):
-                    return "invoice"
-                else:
-                    return "pdf_other"
-            except Exception:
-                return "pdf_error"
 
-        categorized_files = {"certificate": [], "id_card": [], "invoice": [], "pdf_other": [], "pdf_error": []}
+        # Initialize Google Vision and Language clients
+        try:
+            vision_client = vision.ImageAnnotatorClient()
+            lang_client = language_v1.LanguageServiceClient()
+        except Exception as e:
+            st.error(f"Google Cloud API client error: {e}")
+            return
+
+        def extract_text_gcv(file_bytes):
+            image = vision.Image(content=file_bytes)
+            response = vision_client.document_text_detection(image=image)
+            if response.error.message:
+                return ""
+            return response.full_text_annotation.text
+
+        def analyze_text_nlp(text):
+            document = language_v1.Document(content=text, type_=language_v1.Document.Type.PLAIN_TEXT)
+            # Entity analysis
+            entities = lang_client.analyze_entities(request={"document": document}).entities
+            entity_list = [(entity.name, language_v1.Entity.Type(entity.type_).name) for entity in entities]
+            # Sentiment analysis
+            sentiment = lang_client.analyze_sentiment(request={"document": document}).document_sentiment
+            return entity_list, sentiment.score, sentiment.magnitude
+
+        def classify_text(text):
+            text = text.lower()
+            if any(word in text for word in ["certificate", "completion", "certify"]):
+                return "certificate"
+            elif any(word in text for word in ["id card", "identity", "passport", "aadhaar", "pan card"]):
+                return "id_card"
+            elif any(word in text for word in ["invoice", "bill", "amount due", "total due"]):
+                return "invoice"
+            else:
+                return "other"
+
+        categorized_files = {"certificate": [], "id_card": [], "invoice": [], "other": [], "pdf_error": []}
+        report_files = []
         other_ext_map = {}
         for uploaded_file in uploaded_files:
             fname = uploaded_file.name
             ext = os.path.splitext(fname)[1].lower().strip('.')
             file_bytes = uploaded_file.read()
+            text = ""
             if ext == "pdf":
-                category = classify_pdf(file_bytes)
-                categorized_files[category].append((fname, file_bytes))
+                # Extract text from each page using PyPDF2
+                try:
+                    reader = PdfReader(io.BytesIO(file_bytes))
+                    for page in reader.pages:
+                        page_text = page.extract_text() or ""
+                        text += page_text
+                    category = classify_text(text)
+                    categorized_files[category].append((fname, file_bytes))
+                except Exception:
+                    categorized_files["pdf_error"].append((fname, file_bytes))
+            elif ext in ["jpg", "jpeg", "png", "webp"]:
+                # Use Google Vision for image OCR
+                try:
+                    text = extract_text_gcv(file_bytes)
+                    category = classify_text(text)
+                    categorized_files[category].append((fname, file_bytes))
+                except Exception:
+                    categorized_files["other"].append((fname, file_bytes))
             else:
                 other_ext_map.setdefault(ext, []).append((fname, file_bytes))
 
+            # If text was extracted, analyze with Google NLP and save a report
+            if text.strip():
+                try:
+                    entities, sentiment_score, sentiment_magnitude = analyze_text_nlp(text)
+                    report = f"File: {fname}\nCategory: {category}\nSentiment Score: {sentiment_score}\nSentiment Magnitude: {sentiment_magnitude}\nEntities: {entities}\n"
+                    report_files.append((fname + "_report.txt", report.encode("utf-8")))
+                except Exception as e:
+                    report = f"File: {fname}\nCategory: {category}\nNLP Analysis Error: {e}\n"
+                    report_files.append((fname + "_report.txt", report.encode("utf-8")))
+
         zip_buffer = io.BytesIO()
         with zipfile.ZipFile(zip_buffer, "w") as zipf:
-            # Add categorized PDFs
+            # Add categorized files
             for category, files in categorized_files.items():
                 for fname, file_bytes in files:
                     zipf.writestr(os.path.join(category, fname), file_bytes)
@@ -64,8 +112,11 @@ def main():
             for ext, files in other_ext_map.items():
                 for fname, file_bytes in files:
                     zipf.writestr(os.path.join(ext, fname), file_bytes)
+            # Add NLP reports
+            for report_fname, report_bytes in report_files:
+                zipf.writestr(os.path.join("reports", report_fname), report_bytes)
         zip_buffer.seek(0)
-        st.success("Files categorized and ready for download as a zip file.")
+        st.success("Files categorized (using Google AI/ML for OCR & NLP) and ready for download as a zip file.")
         st.download_button(
             label="Download All Categorized Files (ZIP)",
             data=zip_buffer,

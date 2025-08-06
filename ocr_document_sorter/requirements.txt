@@ -5,3 +5,5 @@ scikit-learn
 opencv-python
 numpy
 PyPDF2
+google-cloud-vision
+google-cloud-language
