@@ -88,6 +88,7 @@ def main():
             "invoice": [],
             "exe": [],
             "zip": [],
+            "images": [],
             "other": [],
             "pdf_error": []
         }
@@ -109,8 +110,16 @@ def main():
                     categorized_files[category].append((fname, file_bytes))
                 except Exception:
                     categorized_files["pdf_error"].append((fname, file_bytes))
-            elif ext in ["jpg", "jpeg", "png", "webp"]:
-                # Use Google Vision for image OCR
+            elif ext in ["jpg", "jpeg", "png"]:
+                # Always categorize jpg/jpeg/png as images
+                categorized_files["images"].append((fname, file_bytes))
+                # Optionally, still run OCR and NLP for reports
+                try:
+                    text = extract_text_gcv(file_bytes)
+                except Exception:
+                    text = ""
+            elif ext == "webp":
+                # Keep webp as before (can be added to images if desired)
                 try:
                     text = extract_text_gcv(file_bytes)
                     category = classify_text(text)
